@@ -1,0 +1,22 @@
+version: '3'
+
+services:
+  csmoney_parser:
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+
+  steam_parser:
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+
+  bot:
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+
+  worker:
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4

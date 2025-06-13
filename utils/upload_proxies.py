@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 import asyncio
 
 from common.env_var import EnvVar
@@ -13,23 +15,29 @@ _CSMONEY_PROXIES_KEY = "csmoney_proxies"
 
 async def fill_proxies(redis, file, key):
     storage = RedisProxyStorage(redis, key)
-    proxies = await storage.get_all()
-    for proxy in proxies:
+    # Remove old proxies
+    old_proxies = await storage.get_all()
+    for proxy in old_proxies:
         await storage.remove(proxy)
+    
+    # Load new proxies
+    new_proxies_count = 0
     with open(file, "r", encoding="utf8") as f:
-        while f.readable():
-            line = f.readline().strip()
+        for line in f:
+            line = line.strip()
             if not line:
-                break
+                continue
             proxy = Proxy(proxy=line)
             await storage.add(proxy)
-    print(f"Successfully filled {len(proxies)} proxies")
+            new_proxies_count += 1
+    
+    print(f"Successfully filled {new_proxies_count} proxies for {key}")
 
 
 async def main():
     redis = RedisConnector.create(
         host=EnvVar.get("REDIS_HOST"),
-        port=EnvVar.get("REDIS_PORT"),
+        port=EnvVar.get("REDIS_PORT"),  
         db=EnvVar.get("REDIS_DB"),
         password=EnvVar.get("REDIS_PASSWORD"),
     )

@@ -2,3 +2,45 @@
 venv
 .pytest_cache
 .coverage
+
+# Visual Studio
+.vs/
+*.vsidx
+.vscode/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+*.egg-info/
+
+# IDE
+*.swp
+*.swo
+
+# Docker
+.env
+*.env
+!*.example.env
+
+# Logs
+*.log
+logs/
+
+# Credentials and sensitive data
+utils_mount/
+!utils_mount/.gitkeep
+bot.dev.env
+csmoney_parser.dev.env
+steam_parser.dev.env
+worker.dev.env
+prod.env
+
+# Redis data
+dump.rdb
+
+# Poetry
+poetry.lock
