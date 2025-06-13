@@ -12,6 +12,6 @@ ENV TZ=Europe/Minsk
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 RUN pip install poetry
 COPY poetry.lock pyproject.toml ./
-RUN poetry install --only main --extras linux --no-root
+RUN poetry install --no-dev --extras linux
 COPY . ./
 CMD ["bash"]
