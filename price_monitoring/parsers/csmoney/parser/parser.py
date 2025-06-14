@@ -1,3 +1,4 @@
+# price_monitoring/parsers/csmoney/parser/parser.py
 import logging
 from datetime import datetime
 
@@ -72,7 +73,23 @@ def _create_items(json_item) -> list[CsmoneyItem]:
 
 @catch_aiohttp(logger)
 async def _request(session: ClientSession, step_url: str) -> dict | None:
-    async with session.get(step_url, timeout=_RESPONSE_TIMEOUT) as response:
+    # Fix: Use proper headers and handle both old and new API endpoints
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Origin': 'https://cs.money',
+        'Referer': 'https://cs.money/',
+    }
+    
+    # Try new API endpoint first
+    if "inventories.cs.money" in step_url:
+        # Replace with new API endpoint structure
+        step_url = step_url.replace("inventories.cs.money/5.0", "cs.money/1.0")
+        step_url = step_url.replace("inventories.cs.money", "cs.money")
+    
+    async with session.get(step_url, headers=headers, timeout=_RESPONSE_TIMEOUT) as response:
         response.raise_for_status()
         return await response.json()
 

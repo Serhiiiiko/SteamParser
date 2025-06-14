@@ -1,3 +1,4 @@
+# utils/create_csmoney_tasks.py
 import asyncio
 
 from common.env_var import EnvVar
@@ -7,9 +8,19 @@ from price_monitoring.parsers.csmoney.task_scheduler import RedisTaskScheduler
 
 
 def generate_tasks() -> list[CsmoneyTask]:
+    # Updated URL format for new CS.MONEY API
     fmt = (
-        "https://inventories.cs.money/5.0/load_bots_inventory/730?hasTradeLock=false"
-        "&hasTradeLock=true&isMarket=false&limit=60&maxPrice={max_price}&minPrice={min_price}"
+        "https://cs.money/1.0/market/buy-orders?game=csgo"
+        "&hasTradeLock=false&hasTradeLock=true&isMarket=false"
+        "&limit=60&maxPrice={max_price}&minPrice={min_price}"
+        "&withStack=true"
+    )
+    
+    # Alternative format if the above doesn't work
+    alt_fmt = (
+        "https://api.cs.money/market/items?game=csgo"
+        "&hasTradeLock=false&hasTradeLock=true&isMarket=false"
+        "&limit=60&maxPrice={max_price}&minPrice={min_price}"
         "&withStack=true"
     )
 

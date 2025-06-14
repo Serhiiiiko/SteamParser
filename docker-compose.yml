@@ -1,3 +1,4 @@
+# docker-compose.yml
 version: '3'
 
 services:
@@ -18,6 +19,8 @@ services:
             interval: 30s
             timeout: 10s
             retries: 5
+        networks:
+            - app-network
 
     redis:
         image: redis:latest
@@ -31,16 +34,21 @@ services:
             interval: 30s
             timeout: 5s
             retries: 5
+        networks:
+            - app-network
 
     upload_proxies:
         build:
             dockerfile: Dockerfile
             context: .
-        network_mode: host
+        networks:
+            - app-network
         volumes:
             - ./utils:/root/fw3/utils
             - ./utils_mount:/root/fw3/utils_mount
         env_file: utils/upload_proxies.env
+        environment:
+            REDIS_HOST: redis
         command: poetry run python3 utils/upload_proxies.py
         depends_on:
             - redis
@@ -49,10 +57,13 @@ services:
         build:
             dockerfile: Dockerfile
             context: .
-        network_mode: host
+        networks:
+            - app-network
         volumes:
             - ./utils:/root/fw3/utils
         env_file: utils/create_csmoney_tasks.env
+        environment:
+            REDIS_HOST: redis
         command: poetry run python3 utils/create_csmoney_tasks.py
         depends_on:
             - redis
@@ -63,11 +74,16 @@ services:
             dockerfile: Dockerfile
             context: .
         restart: unless-stopped
-        network_mode: host
+        networks:
+            - app-network
         depends_on:
             - rabbitmq
             - redis
         env_file: bot.dev.env
+        environment:
+            WORKER_REDIS_HOST: redis
+            CACHE_REDIS_HOST: redis
+            TELEGRAM_REDIS_HOST: redis
         command: bash -c "sleep 10 && poetry run python3 bot.py"
 
     csmoney_parser:
@@ -75,13 +91,18 @@ services:
             dockerfile: Dockerfile
             context: .
         restart: unless-stopped
-        network_mode: host
+        networks:
+            - app-network
         depends_on:
             - rabbitmq
             - redis
             - upload_proxies
             - create_csmoney_tasks
         env_file: csmoney_parser.dev.env
+        environment:
+            REDIS_HOST: redis
+            RABBITMQ_HOST: rabbitmq
+            USE_PROXY: "false"  # Set to true when proxies are working
         command: bash -c "sleep 15 && poetry run python3 csmoney_parser.py"
 
     steam_parser:
@@ -89,12 +110,16 @@ services:
             dockerfile: Dockerfile
             context: .
         restart: unless-stopped
-        network_mode: host
+        networks:
+            - app-network
         depends_on:
             - rabbitmq
             - redis
             - upload_proxies
         env_file: steam_parser.dev.env
+        environment:
+            REDIS_HOST: redis
+            RABBITMQ_HOST: rabbitmq
         command: bash -c "sleep 15 && poetry run python3 steam_parser.py"
 
     worker:
@@ -102,9 +127,17 @@ services:
             dockerfile: Dockerfile
             context: .
         restart: unless-stopped
-        network_mode: host
+        networks:
+            - app-network
         depends_on:
             - rabbitmq
             - redis
         env_file: worker.dev.env
+        environment:
+            REDIS_HOST: redis
+            RABBITMQ_HOST: rabbitmq
         command: bash -c "sleep 10 && poetry run python3 worker.py"
+
+networks:
+    app-network:
+        driver: bridge
