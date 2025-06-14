@@ -22,16 +22,23 @@ def _create_headers():
         "Accept": "*/*",
         "Accept-Language": "ru-RU,ru;q=0.8,en-US;q=0.5,en;q=0.3",
         "Accept-Encoding": "gzip, deflate, br",
-        # 'X-Requested-With': 'XMLHttpRequest',
         "Connection": "keep-alive",
-        # 'Referer': referer,
         "Sec-Fetch-Dest": "empty",
         "Sec-Fetch-Mode": "cors",
         "Sec-Fetch-Site": "same-origin",
+        "DNT": "1",
+        "Upgrade-Insecure-Requests": "1",
     }
 
 
 def create_limiter(proxies: Sequence[Proxy]):
+    if not proxies:
+        # ≈сли нет прокси, создаем обычные сессии
+        return AsyncSessionConcurrentLimiter(
+            [AiohttpSessionFactory.create_session() for _ in range(2)],
+            time(),
+        )
+    
     return AsyncSessionConcurrentLimiter(
         [
             AiohttpSessionFactory.create_session_with_proxy(proxy, headers=_create_headers())

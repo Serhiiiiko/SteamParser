@@ -13,6 +13,11 @@ services:
         ports:
             - "${RABBITMQ_AMQP_PORT}:5672"
             - "${RABBITMQ_WEBUI_PORT}:15672"
+        healthcheck:
+            test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+            interval: 30s
+            timeout: 10s
+            retries: 5
 
     redis:
         image: redis:latest
@@ -21,66 +26,11 @@ services:
         command: redis-server --requirepass ${REDIS_PASSWORD}
         ports:
             - "${REDIS_PORT}:6379"
-
-    bot:
-        build:
-            dockerfile: Dockerfile
-            context: .
-        restart: unless-stopped
-        network_mode: host
-        depends_on:
-            - rabbitmq
-            - redis
-        env_file: bot.dev.env
-        command: poetry run python3 bot.py
-
-    csmoney_parser:
-        build:
-            dockerfile: Dockerfile
-            context: .
-        restart: unless-stopped
-        network_mode: host
-        depends_on:
-            - rabbitmq
-            - redis
-        env_file: csmoney_parser.dev.env
-        command: poetry run python3 csmoney_parser.py
-
-    steam_parser:
-        build:
-            dockerfile: Dockerfile
-            context: .
-        restart: unless-stopped
-        network_mode: host
-        depends_on:
-            - rabbitmq
-            - redis
-        env_file: steam_parser.dev.env
-        command: poetry run python3 steam_parser.py
-
-    worker:
-        build:
-            dockerfile: Dockerfile
-            context: .
-        restart: unless-stopped
-        network_mode: host
-        depends_on:
-            - rabbitmq
-            - redis
-        env_file: worker.dev.env
-        command: poetry run python3 worker.py
-
-    create_csmoney_tasks:
-        build:
-            dockerfile: Dockerfile
-            context: .
-        network_mode: host
-        volumes:
-            - ./utils:/root/fw3/utils
-        env_file: utils/create_csmoney_tasks.env
-        command: poetry run python3 utils/create_csmoney_tasks.py
-        depends_on:
-            - redis
+        healthcheck:
+            test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+            interval: 30s
+            timeout: 5s
+            retries: 5
 
     upload_proxies:
         build:
@@ -94,3 +44,67 @@ services:
         command: poetry run python3 utils/upload_proxies.py
         depends_on:
             - redis
+
+    create_csmoney_tasks:
+        build:
+            dockerfile: Dockerfile
+            context: .
+        network_mode: host
+        volumes:
+            - ./utils:/root/fw3/utils
+        env_file: utils/create_csmoney_tasks.env
+        command: poetry run python3 utils/create_csmoney_tasks.py
+        depends_on:
+            - redis
+            - upload_proxies
+
+    bot:
+        build:
+            dockerfile: Dockerfile
+            context: .
+        restart: unless-stopped
+        network_mode: host
+        depends_on:
+            - rabbitmq
+            - redis
+        env_file: bot.dev.env
+        command: bash -c "sleep 10 && poetry run python3 bot.py"
+
+    csmoney_parser:
+        build:
+            dockerfile: Dockerfile
+            context: .
+        restart: unless-stopped
+        network_mode: host
+        depends_on:
+            - rabbitmq
+            - redis
+            - upload_proxies
+            - create_csmoney_tasks
+        env_file: csmoney_parser.dev.env
+        command: bash -c "sleep 15 && poetry run python3 csmoney_parser.py"
+
+    steam_parser:
+        build:
+            dockerfile: Dockerfile
+            context: .
+        restart: unless-stopped
+        network_mode: host
+        depends_on:
+            - rabbitmq
+            - redis
+            - upload_proxies
+        env_file: steam_parser.dev.env
+        command: bash -c "sleep 15 && poetry run python3 steam_parser.py"
+
+    worker:
+        build:
+            dockerfile: Dockerfile
+            context: .
+        restart: unless-stopped
+        network_mode: host
+        depends_on:
+            - rabbitmq
+            - redis
+        env_file: worker.dev.env
+        command: bash -c "sleep 10 && poetry run python3 worker.py"

@@ -1,4 +1,5 @@
 import asyncio
+import os
 
 from common.env_var import EnvVar
 from common.redis_connector import RedisConnector
@@ -13,17 +14,31 @@ _CSMONEY_PROXIES_KEY = "csmoney_proxies"
 
 async def fill_proxies(redis, file, key):
     storage = RedisProxyStorage(redis, key)
-    proxies = await storage.get_all()
-    for proxy in proxies:
+    
+    # Clear existing proxies
+    existing = await storage.get_all()
+    for proxy in existing:
         await storage.remove(proxy)
-    with open(file, "r", encoding="utf8") as f:
-        while f.readable():
-            line = f.readline().strip()
-            if not line:
-                break
-            proxy = Proxy(proxy=line)
-            await storage.add(proxy)
-    print(f"Successfully filled {len(proxies)} proxies")
+    print(f"Removed {len(existing)} existing proxies from {key}")
+    
+    # Load new proxies
+    count = 0
+    if os.path.exists(file):
+        with open(file, "r", encoding="utf8") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#"):
+                    try:
+                        proxy = Proxy(proxy=line)
+                        await storage.add(proxy)
+                        count += 1
+                        print(f"Added proxy: {proxy}")
+                    except Exception as e:
+                        print(f"Failed to add proxy {line}: {e}")
+    else:
+        print(f"Warning: File {file} not found!")
+    
+    print(f"Successfully filled {count} proxies for {key}")
 
 
 async def main():
@@ -33,10 +48,9 @@ async def main():
         db=EnvVar.get("REDIS_DB"),
         password=EnvVar.get("REDIS_PASSWORD"),
     )
-    for file, key in zip(
-        [_STEAM_PROXIES, _CSMONEY_PROXIES], [_STEAM_PROXIES_KEY, _CSMONEY_PROXIES_KEY]
-    ):
-        await fill_proxies(redis, file, key)
+    
+    await fill_proxies(redis, _STEAM_PROXIES, _STEAM_PROXIES_KEY)
+    await fill_proxies(redis, _CSMONEY_PROXIES, _CSMONEY_PROXIES_KEY)
 
 
 if __name__ == "__main__":
