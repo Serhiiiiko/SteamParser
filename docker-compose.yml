@@ -130,13 +130,15 @@ services:
         networks:
             - app-network
         depends_on:
-            - rabbitmq
-            - redis
+            rabbitmq:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
         env_file: worker.dev.env
         environment:
             REDIS_HOST: redis
             RABBITMQ_HOST: rabbitmq
-        command: bash -c "sleep 10 && poetry run python3 worker.py"
+        command: bash -c "sleep 20 && poetry run python3 worker.py"
 
 networks:
     app-network:
