@@ -67,8 +67,8 @@ description = "The system for monitoring item prices between CS.MONEY and Steam 
 authors = ["Viktor Kozlov <soniclev@mail.ru>"]
 
 [tool.poetry.dependencies]
-# For Scipy compatibility
-python = ">=3.9,<3.12"
+# For compatibility
+python = "^3.10"
 aio-pika = "9.4.1"
 dataclasses-json = "^0.5.7"
 marshmallow-dataclass = "^8.5.8"
@@ -92,7 +92,7 @@ asyncpg = "0.29.0"
 [tool.poetry.extras]
 linux = ["uvloop"]
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 aioresponses = "^0.7.3"
 pytest = "^7.1.2"
 pytest-asyncio = "^0.18.3"

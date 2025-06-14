@@ -1,8 +1,4 @@
-from .abstract_parser import AbstractCsmoneyParser, MaxAttemptsReachedError
-from .parser import CsmoneyParserImpl
+from .parser import AbstractCsmoneyParser, MaxAttemptsReachedError
+from .csmoney_parser import CsmoneyParser
 
-__all__ = [
-    "AbstractCsmoneyParser",
-    "CsmoneyParserImpl",
-    "MaxAttemptsReachedError",
-]
+__all__ = ["CsmoneyParser", "AbstractCsmoneyParser", "MaxAttemptsReachedError"]

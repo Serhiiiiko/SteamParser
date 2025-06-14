@@ -1,48 +1,25 @@
 from time import time
-from typing import Sequence
+from typing import List
 
-from random_user_agent.params import SoftwareName, OperatingSystem
-from random_user_agent.user_agent import UserAgent
+from aiohttp import ClientSession
 
 from proxy_http.aiohttp_session_factory import AiohttpSessionFactory
 from proxy_http.async_proxies_concurrent_limiter import AsyncSessionConcurrentLimiter
 from proxy_http.proxy import Proxy
 
 
-user_agent_rotator = UserAgent(
-    software_names=[SoftwareName.CHROME.value],
-    operating_systems=[OperatingSystem.WINDOWS.value],
-    limit=1000,
-)
-
-
-def _create_headers():
-    return {
-        "User-Agent": user_agent_rotator.get_random_user_agent(),
-        "Accept": "*/*",
-        "Accept-Language": "ru-RU,ru;q=0.8,en-US;q=0.5,en;q=0.3",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Connection": "keep-alive",
-        "Sec-Fetch-Dest": "empty",
-        "Sec-Fetch-Mode": "cors",
-        "Sec-Fetch-Site": "same-origin",
-        "DNT": "1",
-        "Upgrade-Insecure-Requests": "1",
-    }
-
-
-def create_limiter(proxies: Sequence[Proxy]):
-    if not proxies:
-        # ≈сли нет прокси, создаем обычные сессии
-        return AsyncSessionConcurrentLimiter(
-            [AiohttpSessionFactory.create_session() for _ in range(2)],
-            time(),
-        )
+def create_limiter(proxies: List[Proxy]) -> AsyncSessionConcurrentLimiter:
+    """Create a concurrent limiter with sessions for all proxies."""
+    sessions = []
     
-    return AsyncSessionConcurrentLimiter(
-        [
-            AiohttpSessionFactory.create_session_with_proxy(proxy, headers=_create_headers())
-            for proxy in proxies
-        ],
-        time(),
-    )
+    # Add sessions with proxies
+    for proxy in proxies:
+        session = AiohttpSessionFactory.create_session_with_proxy(proxy)
+        sessions.append(session)
+    
+    # If no proxies, add a direct connection session
+    if not sessions:
+        session = AiohttpSessionFactory.create_session()
+        sessions.append(session)
+    
+    return AsyncSessionConcurrentLimiter(sessions, time())
