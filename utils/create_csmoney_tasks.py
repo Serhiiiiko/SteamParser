@@ -8,20 +8,12 @@ from price_monitoring.parsers.csmoney.task_scheduler import RedisTaskScheduler
 
 
 def generate_tasks() -> list[CsmoneyTask]:
-    # Updated URL format for new CS.MONEY API
+    # CS.MONEY API has changed - using the main domain now
+    # The old inventories.cs.money subdomain no longer exists
     fmt = (
-        "https://cs.money/1.0/market/buy-orders?game=csgo"
-        "&hasTradeLock=false&hasTradeLock=true&isMarket=false"
+        "https://cs.money/1.0/market/sell-orders/730"
+        "?hasTradeLock=false&hasTradeLock=true"
         "&limit=60&maxPrice={max_price}&minPrice={min_price}"
-        "&withStack=true"
-    )
-    
-    # Alternative format if the above doesn't work
-    alt_fmt = (
-        "https://api.cs.money/market/items?game=csgo"
-        "&hasTradeLock=false&hasTradeLock=true&isMarket=false"
-        "&limit=60&maxPrice={max_price}&minPrice={min_price}"
-        "&withStack=true"
     )
 
     result = []
@@ -34,6 +26,11 @@ def generate_tasks() -> list[CsmoneyTask]:
         url = fmt.format(min_price=value, max_price=new_value)
         result.append(CsmoneyTask(url=url))
         value = new_value
+    
+    # Also try a simple test URL
+    test_url = "https://cs.money/1.0/market/sell-orders/730?limit=10"
+    result.insert(0, CsmoneyTask(url=test_url))
+    
     return result
 
 
@@ -48,6 +45,7 @@ async def main():
     await scheduler.clear()
     tasks = generate_tasks()
     print(f"Generated {len(tasks)} tasks.")
+    print(f"Sample URL: {tasks[0].url}")
     for task in tasks:
         await scheduler.append_task(task)
 

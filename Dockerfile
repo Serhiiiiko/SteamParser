@@ -11,7 +11,11 @@ ENV PYTHONUTF8 1
 ENV TZ=Europe/Minsk
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 RUN pip install poetry
-COPY poetry.lock pyproject.toml ./
+# Copy only pyproject.toml first
+COPY pyproject.toml ./
+# Generate a fresh lock file based on pyproject.toml
+RUN poetry lock
+# Now install dependencies
 RUN poetry install --only main --extras linux --no-root
 COPY . ./
 CMD ["bash"]

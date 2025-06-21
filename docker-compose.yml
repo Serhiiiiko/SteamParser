@@ -102,7 +102,7 @@ services:
         environment:
             REDIS_HOST: redis
             RABBITMQ_HOST: rabbitmq
-            USE_PROXY: "false"  # Set to true when proxies are working
+            USE_PROXY: "true"  # Changed to true to use proxies
         command: bash -c "sleep 15 && poetry run python3 csmoney_parser.py"
 
     steam_parser:
